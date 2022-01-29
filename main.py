@@ -119,6 +119,8 @@ def getFirstDay(dt):
         day = (dt + relativedelta(day=1, weekday=TU(4)))
     elif dt.month == 9:
         day = (dt + relativedelta(day=1, weekday=WE(2)))
+    else:
+        raise Exception("Invalid start month!")
 
     return day
 
@@ -134,7 +136,6 @@ def createEvent(calendar, eventName, start, end):
     event.extra.append(ContentLine(name="RRULE", params={}, value="FREQ=WEEKLY;UNTIL=20220515T040000Z;"))
     event.end = arrow.get(end, 'US/Central')
     calendar.events.add(event)
-
 
 
 if __name__ == "__main__":
