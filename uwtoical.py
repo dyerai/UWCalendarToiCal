@@ -1,14 +1,18 @@
+import re
+from datetime import datetime, date, timedelta
 from io import BytesIO
-from pdfminer.high_level import extract_pages
-from pdfminer.layout import LTTextBoxHorizontal
 from unicodedata import normalize
+from zoneinfo import ZoneInfo
+
+import click
+import pandas as pd
+from dateutil.relativedelta import relativedelta, SA, TH
 from ics import Calendar, Event
 from ics.parse import ContentLine
-from datetime import datetime, date, timedelta
-from dateutil.relativedelta import relativedelta, WE, TU, SA, TH
-from zoneinfo import ZoneInfo
-import pandas as pd
-import re
+from pdfminer.high_level import extract_pages
+from pdfminer.layout import LTTextBoxHorizontal
+
+from AcademicCalendar import AcademicCalendar
 
 timezone = ZoneInfo("US/Central")
 types = {
@@ -16,14 +20,21 @@ types = {
     "LEC": "Lecture",
     "LAB": "Lab"
 }
+academic_cal = AcademicCalendar()
 
 
+@click.command()
+@click.argument('pdf')
 def toiCal(pdf):
     """
-    This method creates an ics file based off of a UW course schedule pdf
-    :param pdf: either a string path to the file, or a BytesIO object containing the file
-    :return: if pdf is a string, nothing.
-            if pdf is a BytesIO object, toiCal returns a BytesIO object containing the ics file
+    \bThis method creates an ics file based off of a UW course schedule pdf
+
+    You can obtain the course schedule by following these steps:\n
+    \t1. Go to MyUW and select the Course Schedule App\n
+    \t2. In the Course Schedule App, press the print button\n
+    \t3. In the print dialog, select "Save as PDF" as the destination\n
+
+    PDF is a path to the course schedule pdf file
     """
     semester = list(list(extract_pages(pdf))[0])[2].get_text().replace("Course Schedule - ", "").strip("\n").split()
     print(semester)
@@ -69,7 +80,7 @@ def toiCal(pdf):
 
         courseName = course['name'].replace("  ", " ")
         courseType = types[re.match('(\w+) (\d+)', course['section']).group(1)]
-        room, building = re.match('(\d+) (\w+)', course['location']).groups()
+        room, building = re.match('(.+?\d+) (\w+)', course['location']).groups()
         location = getAddress(building)
         timeSpan = course['duration'].split("to")
         start, end = getStartEndTimes(timeSpan)
@@ -90,6 +101,7 @@ def toiCal(pdf):
     if isinstance(pdf, str):
         with open('courses.ics', 'w') as f:
             f.write(str(cal))
+        print("Stored results in courses.ics")
     else:
         return BytesIO(calendarAsBytes)
 
@@ -116,9 +128,9 @@ def getFirstDay(dt: date) -> date:
     """
 
     if dt.month == 1:
-        day = (dt + relativedelta(day=1, weekday=TU(4)))  # Spring semester starts on 4th tuesday in january
+        day = academic_cal.getFirstDayOfSpring(dt.year)
     elif dt.month == 9:
-        day = (dt + relativedelta(day=1, weekday=WE(2)))  # Fall semester always starts on 2nd wednesday in september
+        day = academic_cal.getFirstDayOfFall(dt.year)
     else:
         raise Exception("Invalid start month!")
 
@@ -221,10 +233,11 @@ def getAddress(building: str):
     :param building: a string containing the name of the building
     :return: the address of the building
     """
-    facilities = pd.read_excel('FacilityList2020.xls', 'Sheet1')
-    for index, row in facilities.iterrows():
-        if building in row['Name']:
-            return row['Street Address'] + ", Madison, WI 53715"
+    facilities = pd.read_excel('data/FacilityList2020.xls', 'Sheet1')
+
+    for row in facilities.itertuples():
+        if building in row[2]:  # Name
+            return row[5] + ", Madison, WI 53715"  # Street address
 
     raise Exception(f"Building not found! {building}")
 
@@ -250,6 +263,6 @@ def createEvent(calendar: Calendar, eventName: str, start: date, end: date, loca
 
 
 if __name__ == "__main__":
-    toiCal('MyUW.pdf')
+    toiCal()
 
 
