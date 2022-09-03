@@ -6,3 +6,4 @@ pdfminer.six==20220524
 pytz==2022.2.1
 tabula==1.0.5
 tabula-py==2.5.1
+xlrd>=1.0.0
