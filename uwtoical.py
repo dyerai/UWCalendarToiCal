@@ -2,8 +2,8 @@ import re
 from datetime import datetime, date, timedelta
 from io import BytesIO
 from unicodedata import normalize
-from zoneinfo import ZoneInfo
 
+import pytz
 import click
 import pandas as pd
 from dateutil.relativedelta import relativedelta, SA, TH
@@ -14,7 +14,7 @@ from pdfminer.layout import LTTextBoxHorizontal
 
 from AcademicCalendar import AcademicCalendar
 
-timezone = ZoneInfo("US/Central")
+timezone = pytz.timezone("America/Chicago")
 types = {
     "DIS": "Discussion",
     "LEC": "Lecture",
