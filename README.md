@@ -18,3 +18,5 @@ Once you clone this repo, install the required dependencies using `pip install -
   3. In the print dialog, select "Save as PDF" as the destination
 
 Once you've done this, simply run the script using `python3 uwtoical.py <path to schedule PDF>`
+
+You can also run UW Calendar to ICal as a flask app if you prefer a GUI, just use `python3 app.py`
